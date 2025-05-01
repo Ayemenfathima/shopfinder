@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Nearby Home Appliance Stores</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <div class="container">
+    <h2>Nearby Home Appliance Stores</h2>
+    <div id="location">Detecting location...</div>
+
+    <h3>Select a Product:</h3>
+    <select id="productSelect" onchange="updateBrandOptions()"></select>
+
+    <h3>Select Brand:</h3>
+    <select id="brandSelect">
+      <option disabled selected>-- Select Brand --</option>
+    </select>
+
+    <h3>Select Budget:</h3>
+    <select id="budgetSelect">
+      <option disabled selected>-- Select Budget --</option>
+      <option value="10000">Below ₹10,000</option>
+      <option value="20000">Below ₹20,000</option>
+      <option value="30000">Below ₹30,000</option>
+      <option value="50000">Below ₹50,000</option>
+      <option value="100000">Below ₹1,00,000</option>
+    </select>
+
+    <button onclick="showStores()">Find Stores</button>
+
+    <div id="storeResults"></div>
+  </div>
+
+<script>
+  // full JavaScript logic from your original file goes here (unchanged)
+    const products_pool = [
+      { name: "Refrigerator", brand: "Samsung", rating: 4.3, price: 28000 },
+      { name: "Refrigerator", brand: "LG", rating: 4.2, price: 26000 },
+      { name: "Refrigerator", brand: "Whirlpool", rating: 4.1, price: 24000 },
+      { name: "Refrigerator", brand: "Godrej", rating: 3.9, price: 20000 },
+      { name: "Refrigerator", brand: "Haier", rating: 4.0, price: 22000 },
+      { name: "AC", brand: "LG", rating: 4.3, price: 32000 },
+      { name: "AC", brand: "Voltas", rating: 4.1, price: 30000 },
+      { name: "AC", brand: "Daikin", rating: 4.4, price: 35000 },
+      { name: "AC", brand: "Blue Star", rating: 4.0, price: 28000 },
+      { name: "AC", brand: "Carrier", rating: 4.2, price: 29000 },
+      { name: "TV", brand: "Sony", rating: 4.5, price: 45000 },
+      { name: "TV", brand: "Samsung", rating: 4.4, price: 40000 },
+      { name: "TV", brand: "LG", rating: 4.3, price: 38000 },
+      { name: "TV", brand: "TCL", rating: 4.0, price: 30000 },
+      { name: "TV", brand: "Panasonic", rating: 4.1, price: 31000 },
+      { name: "Washing Machine", brand: "Whirlpool", rating: 4.2, price: 22000 },
+      { name: "Washing Machine", brand: "IFB", rating: 4.3, price: 24000 },
+      { name: "Washing Machine", brand: "LG", rating: 4.4, price: 26000 },
+      { name: "Washing Machine", brand: "Bosch", rating: 4.5, price: 28000 },
+      { name: "Washing Machine", brand: "Samsung", rating: 4.3, price: 25000 },
+      { name: "Microwave", brand: "IFB", rating: 4.1, price: 10000 },
+      { name: "Microwave", brand: "LG", rating: 4.3, price: 12000 },
+      { name: "Microwave", brand: "Samsung", rating: 4.2, price: 11000 },
+      { name: "Microwave", brand: "Morphy Richards", rating: 4.0, price: 9500 },
+      { name: "Microwave", brand: "Bajaj", rating: 3.9, price: 8500 },
+      { name: "Ceiling Fan", brand: "Orient", rating: 4.3, price: 3000 },
+      { name: "Ceiling Fan", brand: "Usha", rating: 4.1, price: 3200 },
+      { name: "Ceiling Fan", brand: "Bajaj", rating: 4.0, price: 2900 },
+      { name: "Ceiling Fan", brand: "Crompton", rating: 4.2, price: 3300 },
+      { name: "Ceiling Fan", brand: "Havells", rating: 4.4, price: 3500 },
+      { name: "Geyser", brand: "Bajaj", rating: 4.3, price: 7000 },
+      { name: "Geyser", brand: "Crompton", rating: 4.2, price: 7200 },
+      { name: "Geyser", brand: "Racold", rating: 4.4, price: 8000 },
+      { name: "Geyser", brand: "Havells", rating: 4.1, price: 7500 },
+      { name: "Geyser", brand: "V-Guard", rating: 4.0, price: 7800 }
+    ];
+
+    const localities = ["Subedari", "Kazipet", "Nakkalagutta", "Balasamudram", "Kakaji Nagar", "Lashkar Singaram", "Kothawada", "Bhavani Nagar", "Shyampet", "KUC Road", "Pochamma Maidan", "Vijaya Theater Road", "Girmajipet", "Ram Nagar", "Hanuman Nagar", "Chintal", "Gopalapuram", "Rangashaipet", "MGM Hospital Road", "Mattewada", "Madikonda", "Reddy Colony", "Kamalapur", "Shambunipet", "Bheemaram"];
+
+    let userLocation = [17.9959, 79.5715];
+
+    window.onload = function () {
+      const locationEl = document.getElementById("location");
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          position => {
+            userLocation = [position.coords.latitude, position.coords.longitude];
+            locationEl.textContent = `Your Location: (${userLocation[0].toFixed(4)}, ${userLocation[1].toFixed(4)})`;
+          },
+          () => locationEl.textContent = "Location access denied or unavailable. Using default."
+        );
+      }
+
+      const productSelect = document.getElementById("productSelect");
+      const defaultOption = document.createElement("option");
+      defaultOption.textContent = "-- Select --";
+      defaultOption.disabled = true;
+      defaultOption.selected = true;
+      productSelect.appendChild(defaultOption);
+
+      const uniqueProducts = [...new Set(products_pool.map(p => p.name))];
+      uniqueProducts.forEach(name => {
+        const option = document.createElement("option");
+        option.value = name;
+        option.textContent = name;
+        productSelect.appendChild(option);
+      });
+    };
+
+    function updateBrandOptions() {
+      const product = document.getElementById("productSelect").value;
+      const brandSelect = document.getElementById("brandSelect");
+      brandSelect.innerHTML = `<option disabled selected>-- Select Brand --</option>`;
+
+      const brands = products_pool
+        .filter(p => p.name === product)
+        .map(p => p.brand);
+
+      [...new Set(brands)].forEach(brand => {
+        const option = document.createElement("option");
+        option.value = brand;
+        option.textContent = brand;
+        brandSelect.appendChild(option);
+      });
+    }
+
+    function calculateDistance(loc1, loc2) {
+      const R = 6371;
+      const toRad = deg => deg * Math.PI / 180;
+      const dLat = toRad(loc2[0] - loc1[0]);
+      const dLon = toRad(loc2[1] - loc1[1]);
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(loc1[0])) * Math.cos(toRad(loc2[0])) * Math.sin(dLon / 2) ** 2;
+      return (R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(2);
+    }
+
+    function generateStores() {
+      const storeList = [];
+      for (let i = 0; i < 50; i++) {
+        const lat = 17.95 + Math.random() * 0.1;
+        const lon = 79.53 + Math.random() * 0.1;
+        storeList.push({
+          name: `${["Croma", "Vijay Sales", "Reliance Digital", "Happy Home", "Smart Buy", "ElectroMart"][Math.floor(Math.random() * 6)]} - ${localities[Math.floor(Math.random() * localities.length)]}`,
+          address: `${localities[Math.floor(Math.random() * localities.length)]}, Warangal`,
+          products: products_pool.sort(() => 0.5 - Math.random()).slice(0, 4),
+          rating: (3.5 + Math.random() * 1.5).toFixed(1),
+          lat: lat,
+          lng: lon,
+          contact: `+91 9${Math.floor(100000000 + Math.random() * 900000000)}`
+        });
+      }
+      return storeList;
+    }
+
+    function showStores() {
+      const selectedProduct = document.getElementById("productSelect").value;
+      const selectedBrand = document.getElementById("brandSelect").value;
+      const selectedBudget = parseInt(document.getElementById("budgetSelect").value);
+      const results = document.getElementById("storeResults");
+      results.innerHTML = "";
+
+      if (!selectedProduct || !selectedBrand || isNaN(selectedBudget)) {
+        results.innerHTML = "<p>Please select product, brand, and budget.</p>";
+        return;
+      }
+
+      const selectedProductObj = products_pool.find(p =>
+        p.name === selectedProduct && p.brand === selectedBrand && p.price <= selectedBudget);
+
+      if (!selectedProductObj) {
+        results.innerHTML = `<p>No products match the selected brand and budget.</p>`;
+        return;
+      }
+
+      const stores = generateStores();
+      results.innerHTML = `<h3>Stores Offering "${selectedProductObj.name}" (Brand: ${selectedProductObj.brand})</h3>`;
+      let found = false;
+
+      stores.forEach(store => {
+        const distance = calculateDistance(userLocation, [store.lat, store.lng]);
+        const productMatch = store.products.find(p =>
+          p.name === selectedProduct && p.brand === selectedBrand && p.price <= selectedBudget);
+
+        if (productMatch && distance <= 15) {
+          found = true;
+          const div = document.createElement("div");
+          div.className = "store";
+          div.innerHTML = `
+            <strong>Store Name:</strong> ${store.name}<br>
+            <strong>Address:</strong> ${store.address}<br>
+            <strong>Rating:</strong> ${store.rating} / 5<br>
+            <strong>Distance:</strong> ${distance} km<br>
+            <strong>Contact:</strong> ${store.contact}<br>
+            <strong>Product Price:</strong> ₹${productMatch.price}<br>
+            <strong>Product Rating:</strong> ${productMatch.rating} / 5<br>
+            <strong>Available Product:</strong>
+            <ul>
+              <li><strong>${productMatch.name}</strong> (Brand: ${productMatch.brand})</li>
+            </ul>
+          `;
+          results.appendChild(div);
+        }
+      });
+
+      if (!found) {
+        results.innerHTML += `<p>No stores found offering "${selectedProductObj.name}" (${selectedBrand}) under ₹${selectedBudget} within 15 km.</p>`;
+      }
+
+      results.scrollIntoView({ behavior: "smooth" });
+    }
+</script>
+
+</body>
+</html>
+
+
